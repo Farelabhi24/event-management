@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\OrganizerProfile;
+use App\Models\Event;
 
 class Organizer extends Model
 {
