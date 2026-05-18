@@ -1,55 +1,77 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
-// Controllers
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\OrganizerController;
 use App\Http\Controllers\OrganizerProfileController;
 use App\Http\Controllers\VenueController;
-use App\Http\Controllers\EventController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ParticipantController;
 
-// Middlewares
-use App\Http\Middleware\CheckGroupHeader;
-use App\Http\Middleware\CheckProfileNotDuplicate;
-use App\Http\Middleware\CheckVenueCapacity;
-use App\Http\Middleware\CheckEventQuota;
-use App\Http\Middleware\CheckTagName;
-use App\Http\Middleware\CheckEventOpen;
-
-// Anggota 1: Organizer
-Route::middleware([CheckGroupHeader::class])->group(function () {
-    Route::get('/organizers', [OrganizerController::class, 'index']);
-    Route::post('/organizers', [OrganizerController::class, 'store']);
-    Route::get('/organizers/{id}', [OrganizerController::class, 'show']);
+// Public routes - Auth
+Route::prefix('auth')->group(function () {
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login',    [AuthController::class, 'login']);
 });
 
-// Anggota 2: OrganizerProfile
-Route::get('/organizer-profiles', [OrganizerProfileController::class, 'index']);
-Route::post('/organizer-profiles', [OrganizerProfileController::class, 'store'])
-    ->middleware(CheckProfileNotDuplicate::class);
-Route::get('/organizer-profiles/{id}', [OrganizerProfileController::class, 'show']);
+// Protected routes
+Route::middleware('auth:api')->group(function () {
 
-// Anggota 3: Venue
-Route::get('/venues', [VenueController::class, 'index']);
-Route::post('/venues', [VenueController::class, 'store'])
-    ->middleware(CheckVenueCapacity::class);
-Route::get('/venues/{id}', [VenueController::class, 'show']);
+    // Auth
+    Route::prefix('auth')->group(function () {
+        Route::post('/logout',  [AuthController::class, 'logout']);
+        Route::get('/profile',  [AuthController::class, 'getUserProfile']);
+    });
 
-// Anggota 4: Event
-Route::get('/events', [EventController::class, 'index']);
-Route::post('/events', [EventController::class, 'store'])
-    ->middleware(CheckEventQuota::class);
-Route::get('/events/{id}', [EventController::class, 'show']);
+    // Events
+    Route::get('/events',          [EventController::class, 'index']);
+    Route::get('/events/{id}',     [EventController::class, 'show']);
+    Route::post('/events',         [EventController::class, 'store'])->middleware('role:admin,organizer');
+    Route::put('/events/{id}',     [EventController::class, 'update'])->middleware('role:admin,organizer');
+    Route::delete('/events/{id}',  [EventController::class, 'destroy'])->middleware('role:admin');
 
-// Anggota 5: Tag & Registration
-Route::get('/tags', [TagController::class, 'index']);
-Route::post('/tags', [TagController::class, 'store'])
-    ->middleware(CheckTagName::class);
-Route::put('/events/{eventId}/tag/{tagId}', [TagController::class, 'attachToEvent']);
+    // Organizers
+    Route::get('/organizers',         [OrganizerController::class, 'index']);
+    Route::get('/organizers/{id}',    [OrganizerController::class, 'show']);
+    Route::post('/organizers',        [OrganizerController::class, 'store'])->middleware('role:admin');
+    Route::put('/organizers/{id}',    [OrganizerController::class, 'update'])->middleware('role:admin');
+    Route::delete('/organizers/{id}', [OrganizerController::class, 'destroy'])->middleware('role:admin');
 
-Route::get('/registrations', [RegistrationController::class, 'index']);
-Route::post('/registrations', [RegistrationController::class, 'store'])
-    ->middleware(CheckEventOpen::class);
-Route::get('/registrations/{id}', [RegistrationController::class, 'show']);
+    // Organizer Profiles
+    Route::get('/organizer-profiles',         [OrganizerProfileController::class, 'index']);
+    Route::get('/organizer-profiles/{id}',    [OrganizerProfileController::class, 'show']);
+    Route::post('/organizer-profiles',        [OrganizerProfileController::class, 'store'])->middleware('role:admin,organizer');
+    Route::put('/organizer-profiles/{id}',    [OrganizerProfileController::class, 'update'])->middleware('role:admin,organizer');
+    Route::delete('/organizer-profiles/{id}', [OrganizerProfileController::class, 'destroy'])->middleware('role:admin');
+
+    // Venues
+    Route::get('/venues',         [VenueController::class, 'index']);
+    Route::get('/venues/{id}',    [VenueController::class, 'show']);
+    Route::post('/venues',        [VenueController::class, 'store'])->middleware('role:admin,organizer');
+    Route::put('/venues/{id}',    [VenueController::class, 'update'])->middleware('role:admin,organizer');
+    Route::delete('/venues/{id}', [VenueController::class, 'destroy'])->middleware('role:admin');
+
+    // Tags
+    Route::get('/tags',         [TagController::class, 'index']);
+    Route::get('/tags/{id}',    [TagController::class, 'show']);
+    Route::post('/tags',        [TagController::class, 'store'])->middleware('role:admin,organizer');
+    Route::put('/tags/{id}',    [TagController::class, 'update'])->middleware('role:admin,organizer');
+    Route::delete('/tags/{id}', [TagController::class, 'destroy'])->middleware('role:admin');
+
+    // Participants
+    Route::get('/participants',         [ParticipantController::class, 'index']);
+    Route::get('/participants/{id}',    [ParticipantController::class, 'show']);
+    Route::post('/participants',        [ParticipantController::class, 'store'])->middleware('role:admin,organizer,participant');
+    Route::put('/participants/{id}',    [ParticipantController::class, 'update'])->middleware('role:admin');
+    Route::delete('/participants/{id}', [ParticipantController::class, 'destroy'])->middleware('role:admin');
+
+    // Registrations
+    Route::get('/registrations',         [RegistrationController::class, 'index']);
+    Route::get('/registrations/{id}',    [RegistrationController::class, 'show']);
+    Route::post('/registrations',        [RegistrationController::class, 'store'])->middleware('role:admin,organizer,participant');
+    Route::put('/registrations/{id}',    [RegistrationController::class, 'update'])->middleware('role:admin,organizer');
+    Route::delete('/registrations/{id}', [RegistrationController::class, 'destroy'])->middleware('role:admin');
+
+});

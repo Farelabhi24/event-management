@@ -3,15 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tag;
-use App\Models\Event;
 use Illuminate\Http\Request;
 
-// app/Http/Controllers/TagController.php
 class TagController extends Controller
 {
     public function index()
     {
-        return response()->json(Tag::with('events')->get());
+        return response()->json(Tag::all());
     }
 
     public function store(Request $request)
@@ -20,13 +18,26 @@ class TagController extends Controller
         return response()->json($tag, 201);
     }
 
-    // Attach tag ke event (Many-to-Many)
-    public function attachToEvent($eventId, $tagId)
+    public function show($id)
     {
-        $event = Event::find($eventId);
-        if (!$event) return response()->json(['message' => 'Event not found'], 404);
+        $tag = Tag::find($id);
+        if (!$tag) return response()->json(['message' => 'Not found'], 404);
+        return response()->json($tag);
+    }
 
-        $event->tags()->syncWithoutDetaching([$tagId]);
-        return response()->json(['message' => 'Tag berhasil ditambahkan ke event', 'event' => $event->load('tags')]);
+    public function update(Request $request, $id)
+    {
+        $tag = Tag::find($id);
+        if (!$tag) return response()->json(['message' => 'Not found'], 404);
+        $tag->update($request->all());
+        return response()->json($tag);
+    }
+
+    public function destroy($id)
+    {
+        $tag = Tag::find($id);
+        if (!$tag) return response()->json(['message' => 'Not found'], 404);
+        $tag->delete();
+        return response()->json(['message' => 'Tag berhasil dihapus']);
     }
 }

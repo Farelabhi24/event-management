@@ -20,8 +20,24 @@ class VenueController extends Controller
 
     public function show($id)
     {
-        $venue = Venue::with('events')->find($id);
+        $venue = Venue::find($id);
         if (!$venue) return response()->json(['message' => 'Not found'], 404);
         return response()->json($venue);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $venue = Venue::find($id);
+        if (!$venue) return response()->json(['message' => 'Not found'], 404);
+        $venue->update($request->all());
+        return response()->json($venue);
+    }
+
+    public function destroy($id)
+    {
+        $venue = Venue::find($id);
+        if (!$venue) return response()->json(['message' => 'Not found'], 404);
+        $venue->delete();
+        return response()->json(['message' => 'Venue berhasil dihapus']);
     }
 }

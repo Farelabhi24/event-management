@@ -3,12 +3,20 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\OrganizerProfile;
-use App\Models\Event;
 
 class Organizer extends Model
 {
-    protected $fillable = ['name', 'email', 'status'];
+    protected $fillable = [
+        'name',
+        'email',
+        'phone',
+        'status',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function profile()
     {

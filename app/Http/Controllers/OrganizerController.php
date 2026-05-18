@@ -9,7 +9,7 @@ class OrganizerController extends Controller
 {
     public function index()
     {
-        return response()->json(Organizer::all());
+        return response()->json(Organizer::with('user', 'profile')->get());
     }
 
     public function store(Request $request)
@@ -20,8 +20,24 @@ class OrganizerController extends Controller
 
     public function show($id)
     {
-        $organizer = Organizer::with('profile', 'events')->find($id);
+        $organizer = Organizer::with('user', 'profile')->find($id);
         if (!$organizer) return response()->json(['message' => 'Not found'], 404);
         return response()->json($organizer);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $organizer = Organizer::find($id);
+        if (!$organizer) return response()->json(['message' => 'Not found'], 404);
+        $organizer->update($request->all());
+        return response()->json($organizer);
+    }
+
+    public function destroy($id)
+    {
+        $organizer = Organizer::find($id);
+        if (!$organizer) return response()->json(['message' => 'Not found'], 404);
+        $organizer->delete();
+        return response()->json(['message' => 'Organizer berhasil dihapus']);
     }
 }

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Registration;
 use Illuminate\Http\Request;
 
-// app/Http/Controllers/RegistrationController.php
 class RegistrationController extends Controller
 {
     public function index()
@@ -21,8 +20,24 @@ class RegistrationController extends Controller
 
     public function show($id)
     {
-        $reg = Registration::with('event', 'participant')->find($id);
-        if (!$reg) return response()->json(['message' => 'Not found'], 404);
-        return response()->json($reg);
+        $registration = Registration::with('event', 'participant')->find($id);
+        if (!$registration) return response()->json(['message' => 'Not found'], 404);
+        return response()->json($registration);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $registration = Registration::find($id);
+        if (!$registration) return response()->json(['message' => 'Not found'], 404);
+        $registration->update($request->all());
+        return response()->json($registration);
+    }
+
+    public function destroy($id)
+    {
+        $registration = Registration::find($id);
+        if (!$registration) return response()->json(['message' => 'Not found'], 404);
+        $registration->delete();
+        return response()->json(['message' => 'Registration berhasil dihapus']);
     }
 }

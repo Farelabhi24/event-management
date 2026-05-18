@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Organizer;
 
 class OrganizerProfile extends Model
 {
-    protected $fillable = ['organizer_id', 'phone', 'address', 'bio', 'website'];
+    protected $fillable = [
+        'organizer_id',
+        'address',
+        'description',
+        'website',
+    ];
 
     public function organizer()
     {
