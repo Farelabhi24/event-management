@@ -1,0 +1,156 @@
+import { useState, useEffect } from 'react';
+import api from '../../api/axios';
+
+function TagList() {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const [tags, setTags] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [editData, setEditData] = useState(null);
+    const [form, setForm] = useState({ name: '' });
+    const [error, setError] = useState('');
+
+    useEffect(() => { fetchTags(); }, []);
+
+    const fetchTags = async () => {
+        try {
+            const res = await api.get('/tags');
+            setTags(Array.isArray(res.data) ? res.data : []);
+        } catch (e) { console.error(e); }
+        finally { setLoading(false); }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+            if (editData) {
+                await api.put(`/tags/${editData.id}`, form);
+            } else {
+                await api.post('/tags', form);
+            }
+            setShowForm(false);
+            setEditData(null);
+            setForm({ name: '' });
+            fetchTags();
+        } catch (err) {
+            setError(err.response?.data?.message || 'Gagal menyimpan');
+        }
+    };
+
+    const handleEdit = (t) => {
+        setEditData(t);
+        setForm({ name: t.name });
+        setShowForm(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Yakin hapus tag ini?')) return;
+        try {
+            await api.delete(`/tags/${id}`);
+            fetchTags();
+        } catch (e) { alert('Gagal menghapus'); }
+    };
+
+    if (loading) return <div style={styles.loading}>Loading...</div>;
+
+    return (
+        <div style={styles.container}>
+            <div style={styles.header}>
+                <h1 style={styles.title}>🏷️ Manajemen Tag Event</h1>
+                {user.role === 'admin' && (
+                    <button onClick={() => { setShowForm(true); setEditData(null); setForm({ name: '' }); }} style={styles.btnAdd}>
+                        + Tambah Tag
+                    </button>
+                )}
+            </div>
+
+            {showForm && (
+                <div style={styles.formCard}>
+                    <h2 style={styles.formTitle}>{editData ? 'Edit Tag' : 'Tambah Tag'}</h2>
+                    {error && <div style={styles.error}>{error}</div>}
+                    <form onSubmit={handleSubmit}>
+                        <div style={styles.field}>
+                            <label style={styles.label}>Nama Tag</label>
+                            <input value={form.name} onChange={e => setForm({...form, name: e.target.value})}
+                                style={{...styles.input, maxWidth: '400px'}} placeholder="Nama tag" required />
+                        </div>
+                        <div style={styles.btnRow}>
+                            <button type="button" onClick={() => setShowForm(false)} style={styles.btnCancel}>Batal</button>
+                            <button type="submit" style={styles.btnSubmit}>Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            <div style={styles.tagsWrap}>
+                {tags.length === 0 ? (
+                    <div style={styles.empty}>Belum ada data tag</div>
+                ) : (
+                    <div style={styles.tableWrap}>
+                        <table style={styles.table}>
+                            <thead>
+                                <tr style={styles.thead}>
+                                    <th style={styles.th}>No</th>
+                                    <th style={styles.th}>Nama Tag</th>
+                                    <th style={styles.th}>Dibuat</th>
+                                    {user.role === 'admin' && <th style={styles.th}>Aksi</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {tags.map((t, i) => (
+                                    <tr key={t.id} style={i % 2 === 0 ? styles.trEven : styles.trOdd}>
+                                        <td style={styles.td}>{i + 1}</td>
+                                        <td style={styles.td}>
+                                            <span style={styles.tagBadge}>{t.name}</span>
+                                        </td>
+                                        <td style={styles.td}>
+                                            {new Date(t.created_at).toLocaleDateString('id-ID')}
+                                        </td>
+                                        {user.role === 'admin' && (
+                                            <td style={styles.td}>
+                                                <button onClick={() => handleEdit(t)} style={styles.btnEdit}>Edit</button>
+                                                <button onClick={() => handleDelete(t.id)} style={styles.btnDelete}>Hapus</button>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+const styles = {
+    container: { padding: '32px', maxWidth: '1200px', margin: '0 auto' },
+    header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
+    title: { fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 },
+    btnAdd: { padding: '10px 20px', backgroundColor: '#1e40af', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+    loading: { textAlign: 'center', padding: '60px', color: '#64748b' },
+    formCard: { backgroundColor: 'white', borderRadius: '10px', padding: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', marginBottom: '24px' },
+    formTitle: { fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' },
+    error: { backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px', borderRadius: '6px', marginBottom: '16px', fontSize: '14px' },
+    field: { marginBottom: '16px' },
+    label: { display: 'block', marginBottom: '4px', fontWeight: '500', color: '#374151', fontSize: '14px' },
+    input: { width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' },
+    btnRow: { display: 'flex', gap: '12px', marginTop: '8px' },
+    btnCancel: { padding: '8px 20px', backgroundColor: '#e2e8f0', color: '#475569', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+    btnSubmit: { padding: '8px 20px', backgroundColor: '#1e40af', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' },
+    tagsWrap: { },
+    tableWrap: { backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' },
+    table: { width: '100%', borderCollapse: 'collapse' },
+    thead: { backgroundColor: '#1e40af' },
+    th: { padding: '12px 16px', textAlign: 'left', color: 'white', fontSize: '14px', fontWeight: '600' },
+    td: { padding: '12px 16px', fontSize: '14px', color: '#1e293b' },
+    trEven: { backgroundColor: 'white' },
+    trOdd: { backgroundColor: '#f8fafc' },
+    empty: { textAlign: 'center', padding: '60px', color: '#64748b', backgroundColor: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' },
+    tagBadge: { backgroundColor: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: '12px', fontSize: '13px' },
+    btnEdit: { padding: '4px 12px', backgroundColor: '#f59e0b', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', marginRight: '6px', fontSize: '13px' },
+    btnDelete: { padding: '4px 12px', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' },
+};
+
+export default TagList;
